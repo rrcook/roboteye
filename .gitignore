@@ -6,3 +6,6 @@ build/
 *.mode1
 *.mode1v3
 *.perspective*
+
+# reference artwork (stock image, not ours to redistribute)
+robot1.jpg
