@@ -1,0 +1,8 @@
+build/
+*.app
+.DS_Store
+# Xcode 2.x per-user files
+*.pbxuser
+*.mode1
+*.mode1v3
+*.perspective*
