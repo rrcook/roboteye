@@ -2,9 +2,9 @@
 
 A full-screen robot eye for Mac OS X 10.4.11 on PowerPC. When it launches it
 takes over the screen. It hides the menu bar, Dock and cursor and shows one
-mechanical eye. The eye holds a gaze for a random time, then darts to a new
+cartoon robot eye drawn in white outlines on black. The eye holds a gaze for a random time, then darts to a new
 direction or back to straight ahead. Now and then it does a slow scan, and it
-blinks with metal shutters. **Press any key to quit.**
+blinks with shutters. **Press any key to quit.**
 
 ![preview](robot_eye_preview.png)
 
@@ -23,11 +23,11 @@ You can also double-click `RobotEye.app` in the Finder.
 |------|---------|
 | `main.m` | App startup, borderless full-screen window, hides the menu bar, Dock and cursor |
 | `EyeView.m/.h` | Animation: random gaze targets, hold times, saccades and scans, pupil, blinks; quits on any key |
-| `eye_draw.c/.h` | All drawing, in plain CoreGraphics (10.4-safe, gradients via CGShading) |
+| `eye_draw.c/.h` | All drawing, in plain CoreGraphics (10.4-safe line art) |
 | `tools/preview.c` | Renders still PNGs with `eye_draw.c` |
 
 ## Tuning
 
 - Timing and behavior: the `#define`s at the top of `EyeView.m`.
 - Size and proportions: the `*_FRAC` values at the top of `eye_draw.c`.
-- Colors: the `Ramp` tables in `eye_draw.c`. `kIrisRamp` and `kGlowRamp` set the eye color.
+- Line width, line color and background: `LINE_FRAC`, `INK_*` and `BG_*` in `eye_draw.c`.
