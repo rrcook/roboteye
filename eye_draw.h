@@ -1,5 +1,5 @@
 /*
- * eye_draw.h - Pure CoreGraphics renderer for the robot eye.
+ * eye_draw.h - Pure CoreGraphics renderer for the robot face.
  *
  * Kept free of Cocoa so the exact same drawing code is used by the
  * application and by the command-line preview tool.
@@ -18,16 +18,17 @@ typedef float CGFloat;
 #endif
 
 typedef struct {
-    CGFloat lookX;   /* -1..1, gaze direction (unit disk), +x = right   */
-    CGFloat lookY;   /* -1..1, +y = up                                   */
-    CGFloat pupil;   /* 0 = constricted, 1 = dilated                     */
-    CGFloat blink;   /* 0 = fully open, 1 = shutters fully closed        */
+    CGFloat lookX;     /* -1..1, gaze direction (unit disk), +x = right */
+    CGFloat lookY;     /* -1..1, +y = up                                 */
+    CGFloat blink;     /* 0 = eyes open, 1 = eyes closed                 */
+    CGFloat smile;     /* -1 = frown, 0 = flat, 1 = big smile            */
+    CGFloat surprise;  /* 0 = normal mouth, 1 = round "O" mouth          */
 } EyeState;
 
-/* Rectangle (in bounds coordinates) that changes when the eye animates. */
+/* Rectangle (in bounds coordinates) that changes when the face animates. */
 CGRect EyeSocketBounds(CGRect bounds);
 
-/* Draw the complete scene (background, bezel, eye) into bounds.
+/* Draw the complete scene (background, head, face) into bounds.
    Coordinates are Quartz-style: origin bottom-left, y up. */
 void EyeDraw(CGContextRef ctx, CGRect bounds, const EyeState *state);
 

@@ -1,9 +1,10 @@
 /*
- * EyeView.m - Full-screen view that animates the robot eye.
+ * EyeView.m - Full-screen view that animates the robot face.
  *
- * The eye holds a gaze for a random interval, then darts (or, sometimes,
- * slowly scans) to a new direction or back to straight ahead. It blinks
- * now and then. Any key quits.
+ * The eyes hold a gaze for a random interval, then dart (or, sometimes,
+ * slowly scan) to a new direction or back to straight ahead. They blink
+ * now and then. The mouth mostly smiles, with the occasional frown or
+ * surprised "O". Any key quits.
  */
 #import "EyeView.h"
 
@@ -20,6 +21,10 @@
 #define HOLD_MAX         4.0
 #define BLINK_GAP_MIN    3.0    /* seconds between blinks                  */
 #define BLINK_GAP_MAX    9.0
+#define FROWN_CHANCE     0.15   /* per mood change                         */
+#define SURPRISE_CHANCE  0.15
+#define SMILE_HOLD_MIN   3.0    /* seconds between mood changes            */
+#define SMILE_HOLD_MAX   8.0
 
 static double Now(void)
 {
@@ -59,9 +64,13 @@ static double EaseInOut(double t)
         srandom((unsigned)time(NULL) ^ ((unsigned)getpid() << 16));
         eye.lookX = 0;
         eye.lookY = 0;
-        eye.pupil = 0.5f;
         eye.blink = 0;
+        eye.smile = 1;
+        eye.surprise = 0;
+        toSmile = 1;
+        toSurprise = 0;
         holdUntil = now + 1.5;
+        nextExpr = now + RandRange(SMILE_HOLD_MIN, SMILE_HOLD_MAX);
         nextBlink = now + RandRange(2.0, 5.0);
     }
     return self;
@@ -114,7 +123,7 @@ static double EaseInOut(double t)
     EyeDraw(ctx, CGRectMake(b.origin.x, b.origin.y, b.size.width, b.size.height), &eye);
 }
 
-/* Only the socket changes while animating; redraw just that area. */
+/* Only the visor changes while animating; redraw just that area. */
 - (NSRect)socketRect
 {
     NSRect b = [self bounds];
@@ -154,13 +163,47 @@ static double EaseInOut(double t)
     moveDuration = slowMove ? RandRange(1.0, 2.0) : 0.10 + 0.12 * dist;
     moveStart = now;
     moving = YES;
+}
 
-    /* The "aperture" re-adjusts with each new look. */
-    fromPupil = eye.pupil;
-    toPupil = RandUnit();
-    pupilStart = now;
-    pupilDuration = (moveDuration > 0.5) ? moveDuration : 0.5;
-    pupilChanging = YES;
+- (void)setExpressionSmile:(double)smile surprise:(double)surprise
+                  duration:(double)duration now:(double)now
+{
+    fromSmile = eye.smile;
+    fromSurprise = eye.surprise;
+    toSmile = smile;
+    toSurprise = surprise;
+    exprStart = now;
+    exprDuration = duration;
+    exprChanging = YES;
+}
+
+- (void)chooseNextExpression:(double)now
+{
+    double r;
+
+    /* After a frown or a surprise, always go back to smiling. */
+    if (toSmile < 0.3 || toSurprise > 0.5) {
+        [self setExpressionSmile:RandRange(0.6, 1.0) surprise:0 duration:0.4 now:now];
+        nextExpr = now + RandRange(SMILE_HOLD_MIN, SMILE_HOLD_MAX);
+        return;
+    }
+
+    r = RandUnit();
+    if (r < FROWN_CHANCE) {
+        [self setExpressionSmile:-1.0 surprise:0 duration:0.5 now:now];
+        nextExpr = now + RandRange(1.2, 2.5);
+    } else if (r < FROWN_CHANCE + SURPRISE_CHANCE) {
+        /* snap into the "O", and glance at whatever startled us */
+        [self setExpressionSmile:0 surprise:1.0 duration:0.12 now:now];
+        nextExpr = now + RandRange(0.9, 1.8);
+        [self chooseNextLook:now];
+        slowMove = NO;
+        moveDuration = 0.12;
+    } else {
+        /* a slightly different smile */
+        [self setExpressionSmile:RandRange(0.4, 1.0) surprise:0 duration:0.5 now:now];
+        nextExpr = now + RandRange(SMILE_HOLD_MIN, SMILE_HOLD_MAX);
+    }
 }
 
 - (void)tick:(NSTimer *)t
@@ -184,13 +227,17 @@ static double EaseInOut(double t)
         [self chooseNextLook:now];
     }
 
-    if (pupilChanging) {
-        p = (now - pupilStart) / pupilDuration;
+    if (!exprChanging && now >= nextExpr)
+        [self chooseNextExpression:now];
+    if (exprChanging) {
+        p = (now - exprStart) / exprDuration;
         if (p >= 1.0) {
             p = 1.0;
-            pupilChanging = NO;
+            exprChanging = NO;
         }
-        eye.pupil = fromPupil + (toPupil - fromPupil) * EaseInOut(p);
+        e = EaseInOut(p);
+        eye.smile = fromSmile + (toSmile - fromSmile) * e;
+        eye.surprise = fromSurprise + (toSurprise - fromSurprise) * e;
         dirty = YES;
     }
 

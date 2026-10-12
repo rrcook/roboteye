@@ -47,11 +47,14 @@ static int WritePNG(CGContextRef ctx, const char *path)
 
 int main(int argc, char **argv)
 {
-    static const EyeState poses[4] = {
-        {  0.00f,  0.00f, 0.50f, 0.00f },   /* straight ahead          */
-        { -0.75f,  0.62f, 0.10f, 0.00f },   /* up-left, pupil small    */
-        {  1.00f, -0.05f, 1.00f, 0.00f },   /* right, pupil dilated    */
-        {  0.10f, -0.70f, 0.50f, 0.55f }    /* down, mid-blink         */
+    /* lookX, lookY, blink, smile, surprise */
+    static const EyeState poses[6] = {
+        {  0.00f,  0.00f, 0.00f,  1.00f, 0.00f },   /* straight ahead, smiling */
+        { -0.90f,  0.30f, 0.00f,  0.70f, 0.00f },   /* glance left             */
+        {  0.85f, -0.40f, 0.00f, -1.00f, 0.00f },   /* frown, looking down-right */
+        {  0.00f,  0.60f, 0.00f,  0.00f, 1.00f },   /* surprised "O", looking up */
+        {  0.00f,  0.00f, 0.00f,  0.30f, 0.50f },   /* halfway to surprise     */
+        {  0.20f,  0.00f, 0.85f,  1.00f, 0.00f }    /* mid-blink               */
     };
     const char *fullPath = (argc > 1) ? argv[1] : "robot_eye_preview.png";
     const char *posesPath = (argc > 2) ? argv[2] : "robot_eye_poses.png";
@@ -66,14 +69,15 @@ int main(int argc, char **argv)
     free(buf);
 
     ctx = MakeBitmap(&buf);
-    for (i = 0; i < 4; i++) {
-        CGRect r = CGRectMake((i % 2) * (W / 2), (1 - i / 2) * (H / 2), W / 2, H / 2);
+    for (i = 0; i < 6; i++) {
+        CGRect r = CGRectMake((i % 3) * (W / 3), (1 - i / 3) * (H / 2), W / 3, H / 2);
         EyeDraw(ctx, r, &poses[i]);
     }
-    CGContextSetRGBStrokeColor(ctx, 0.3f, 0.3f, 0.3f, 1);
+    CGContextSetRGBStrokeColor(ctx, 0.4f, 0.4f, 0.4f, 1);
     CGContextSetLineWidth(ctx, 2);
-    CGContextMoveToPoint(ctx, W / 2, 0);   CGContextAddLineToPoint(ctx, W / 2, H);
-    CGContextMoveToPoint(ctx, 0, H / 2);   CGContextAddLineToPoint(ctx, W, H / 2);
+    CGContextMoveToPoint(ctx, W / 3, 0);       CGContextAddLineToPoint(ctx, W / 3, H);
+    CGContextMoveToPoint(ctx, 2 * W / 3, 0);   CGContextAddLineToPoint(ctx, 2 * W / 3, H);
+    CGContextMoveToPoint(ctx, 0, H / 2);       CGContextAddLineToPoint(ctx, W, H / 2);
     CGContextStrokePath(ctx);
     ok = WritePNG(ctx, posesPath) && ok;
     CGContextRelease(ctx);
