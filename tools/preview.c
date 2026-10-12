@@ -53,7 +53,7 @@ int main(int argc, char **argv)
         { -0.90f,  0.30f, 0.00f,  0.70f, 0.00f },   /* glance left             */
         {  0.85f, -0.40f, 0.00f, -1.00f, 0.00f },   /* frown, looking down-right */
         {  0.00f,  0.60f, 0.00f,  0.00f, 1.00f },   /* surprised "O", looking up */
-        {  0.00f,  0.00f, 0.00f,  0.30f, 0.50f },   /* halfway to surprise     */
+        {  1.00f,  0.00f, 0.00f,  0.90f, 0.00f },   /* full right, leaning     */
         {  0.20f,  0.00f, 0.85f,  1.00f, 0.00f }    /* mid-blink               */
     };
     const char *fullPath = (argc > 1) ? argv[1] : "robot_eye_preview.png";

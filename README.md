@@ -30,6 +30,6 @@ You can also double-click `RobotEye.app` in the Finder.
 ## Tuning
 
 - Timing and behavior: the `#define`s at the top of `EyeView.m`.
-- Size and proportions: `FACE_*`, `EYE_*`, `GAZE_*` and `MOUTH_Y` at the top of `eye_draw.c`.
+- Size and proportions: `FACE_*`, `EYE_*`, `GAZE_*` and `MOUTH_Y`. How far the eyes lean and turn with the gaze: `EYE_LEAN`, `EYE_TURN_X`, `EYE_TURN_Y` and `EYE_DEPTH` at the top of `eye_draw.c`.
 - How often it frowns or looks surprised: `FROWN_CHANCE` and `SURPRISE_CHANCE` in `EyeView.m`.
 - Colors: `GLOW_*` (eyes and mouth) and `kBackgroundRamp` in `eye_draw.c`.

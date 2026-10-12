@@ -28,6 +28,10 @@
 #define EYE_H         0.40f   /* eye height / face height              */
 #define GAZE_X        0.09f   /* max eye travel / face width            */
 #define GAZE_Y        0.09f   /* max eye travel / face height          */
+#define EYE_LEAN      0.30f   /* max tilt toward the gaze, radians     */
+#define EYE_TURN_X    0.20f   /* narrowing when looking sideways        */
+#define EYE_TURN_Y    0.12f   /* shortening when looking up or down     */
+#define EYE_DEPTH     0.08f   /* near/far eye size difference           */
 
 #define MOUTH_Y      -0.24f   /* mouth centre offset / face height     */
 
@@ -173,35 +177,47 @@ static void DoLayout(CGRect b, Layout *L)
 /* Scene parts                                                        */
 /* ------------------------------------------------------------------ */
 
+/* lx, ly: gaze direction (unit disk); gx, gy: gaze offset in pixels. */
 static void DrawEyes(CGContextRef ctx, const Layout *L, const EyeState *s,
-                     CGFloat gx, CGFloat gy)
+                     CGFloat lx, CGFloat ly, CGFloat gx, CGFloat gy)
 {
     CGFloat grow = 1.0f + 0.15f * s->surprise;
-    CGFloat ew = L->vw * EYE_W * grow;
-    CGFloat eh = L->vh * EYE_H * grow;
+    CGFloat ax = (CGFloat)fabs(lx), ay = (CGFloat)fabs(ly);
+    CGFloat ew = L->vw * EYE_W * grow * (1.0f - EYE_TURN_X * ax);
+    CGFloat eh = L->vh * EYE_H * grow * (1.0f - EYE_TURN_Y * ay);
+    CGFloat lean = -lx * EYE_LEAN;       /* look right -> tops lean right */
     CGFloat open = 1.0f - s->blink;
-    CGFloat h;
+    CGFloat h, depth, w;
+    CGPoint o = CGPointMake(0, 0);
     int side;
-
-    /* a blink squashes the oval down to a thin bar */
-    h = eh * open;
-    if (h < ew * 0.22f)
-        h = ew * 0.22f;
 
     for (side = -1; side <= 1; side += 2) {
         CGPoint ec = CGPointMake(L->vc.x + side * L->vw * EYE_X + gx,
                                  L->vc.y + L->vh * EYE_Y + gy);
-        CGRect eye = CenteredRect(ec, ew, h);
+        CGRect eye;
 
-        EllipticalRadial(ctx, ec, ew * 1.25f, h * 0.5f + ew * 0.75f, &kGlowRamp);
+        /* the eye on the side we look toward is a little farther away */
+        depth = 1.0f - EYE_DEPTH * lx * side;
+        w = ew * depth;
+
+        /* a blink squashes the oval down to a thin bar */
+        h = eh * depth * open;
+        if (h < w * 0.22f)
+            h = w * 0.22f;
+        eye = CenteredRect(o, w, h);
 
         CGContextSaveGState(ctx);
+        CGContextTranslateCTM(ctx, ec.x, ec.y);
+        CGContextRotateCTM(ctx, lean);
+
+        EllipticalRadial(ctx, o, w * 1.25f, h * 0.5f + w * 0.75f, &kGlowRamp);
+
         CGContextBeginPath(ctx);
         CGContextAddEllipseInRect(ctx, eye);
         CGContextClip(ctx);
         CGContextSetRGBFillColor(ctx, GLOW_R, GLOW_G, GLOW_B, 1);
         CGContextFillRect(ctx, eye);
-        EllipticalRadial(ctx, ec, ew * 0.5f, h * 0.5f, &kEyeRamp);
+        EllipticalRadial(ctx, o, w * 0.5f, h * 0.5f, &kEyeRamp);
         CGContextRestoreGState(ctx);
     }
 }
@@ -273,7 +289,7 @@ void EyeDraw(CGContextRef ctx, CGRect bounds, const EyeState *s)
     CGContextFillRect(ctx, bounds);
     Radial(ctx, L.vc, 0, L.vc, far, &kBackgroundRamp);
 
-    DrawEyes(ctx, &L, s, gx, gy);
+    DrawEyes(ctx, &L, s, lx, ly, gx, gy);
     DrawMouth(ctx, &L, s, gx, gy);
 
     CGContextRestoreGState(ctx);
