@@ -1,9 +1,9 @@
 /*
  * eye_draw.c - Pure CoreGraphics renderer for the robot face.
  *
- * Style: cute cartoon robot head - white helmet with a dark outline,
- * dark visor, two glowing blue oval eyes and a blue mouth that morphs
- * between smile, frown and a surprised "O".
+ * Style: just a cute face floating on a dark background - two glowing
+ * blue oval eyes and a blue mouth that morphs between smile, frown and
+ * a surprised "O".
  *
  * Only uses APIs available on Mac OS X 10.4 (CGShading for gradients,
  * since CGGradient/NSGradient are 10.5+).
@@ -19,27 +19,21 @@
 /* Geometry (fractions)                                               */
 /* ------------------------------------------------------------------ */
 
-#define HEAD_H_FRAC   0.74f   /* head height / min(screen w,h)          */
-#define HEAD_ASPECT   1.20f   /* head width / head height               */
-#define VISOR_W_FRAC  0.80f   /* visor width / head width               */
-#define VISOR_H_FRAC  0.64f   /* visor height / head height             */
+#define FACE_H_FRAC   0.62f   /* face box height / min(screen w,h)      */
+#define FACE_ASPECT   1.55f   /* face box width / face box height       */
 
-#define EYE_X         0.25f   /* eye centre offset / visor width        */
-#define EYE_Y         0.08f   /* eye centre offset / visor height       */
-#define EYE_W         0.135f  /* eye width / visor width                */
-#define EYE_H         0.40f   /* eye height / visor height              */
-#define GAZE_X        0.09f   /* max eye travel / visor width           */
-#define GAZE_Y        0.09f   /* max eye travel / visor height          */
+#define EYE_X         0.25f   /* eye centre offset / face width         */
+#define EYE_Y         0.08f   /* eye centre offset / face height       */
+#define EYE_W         0.135f  /* eye width / face width                 */
+#define EYE_H         0.40f   /* eye height / face height              */
+#define GAZE_X        0.09f   /* max eye travel / face width            */
+#define GAZE_Y        0.09f   /* max eye travel / face height          */
 
-#define MOUTH_Y      -0.24f   /* mouth centre offset / visor height     */
+#define MOUTH_Y      -0.24f   /* mouth centre offset / face height     */
 
 /* ------------------------------------------------------------------ */
 /* Colours                                                            */
 /* ------------------------------------------------------------------ */
-
-#define OUTLINE_R 0.09f       /* dark navy cartoon outline */
-#define OUTLINE_G 0.11f
-#define OUTLINE_B 0.22f
 
 #define GLOW_R    0.30f       /* eye / mouth blue */
 #define GLOW_G    0.72f
@@ -54,15 +48,6 @@ static const Ramp kBackgroundRamp = { 2, {
     { 0.00f, 0.13f, 0.16f, 0.21f, 1.0f },
     { 1.00f, 0.02f, 0.03f, 0.05f, 1.0f } } };
 
-static const Ramp kHelmetRamp = { 3, {           /* top -> bottom */
-    { 0.00f, 1.00f, 1.00f, 1.00f, 1.0f },
-    { 0.55f, 0.96f, 0.97f, 0.99f, 1.0f },
-    { 1.00f, 0.76f, 0.82f, 0.90f, 1.0f } } };
-
-static const Ramp kVisorRamp = { 2, {            /* centre -> edge */
-    { 0.00f, 0.11f, 0.13f, 0.27f, 1.0f },
-    { 1.00f, 0.04f, 0.05f, 0.12f, 1.0f } } };
-
 static const Ramp kGlowRamp = { 3, {
     { 0.00f, GLOW_R, GLOW_G, GLOW_B, 0.45f },
     { 0.45f, GLOW_R, GLOW_G, GLOW_B, 0.18f },
@@ -72,10 +57,6 @@ static const Ramp kEyeRamp = { 3, {              /* centre -> edge */
     { 0.00f, 0.62f, 0.90f, 1.00f, 1.0f },
     { 0.60f, GLOW_R, GLOW_G, GLOW_B, 1.0f },
     { 1.00f, 0.20f, 0.58f, 0.95f, 1.0f } } };
-
-static const Ramp kGlossRamp = { 2, {
-    { 0.00f, 1.0f, 1.0f, 1.0f, 0.16f },
-    { 1.00f, 1.0f, 1.0f, 1.0f, 0.00f } } };
 
 /* ------------------------------------------------------------------ */
 /* Shading helpers                                                    */
@@ -146,16 +127,6 @@ static void Radial(CGContextRef ctx, CGPoint c0, CGFloat r0,
     CGFunctionRelease(fn);
 }
 
-/* Linear gradient from p0 to p1, extended both ways (use with a clip). */
-static void Axial(CGContextRef ctx, CGPoint p0, CGPoint p1, const Ramp *ramp)
-{
-    CGFunctionRef fn = MakeRampFunction(ramp);
-    CGShadingRef sh = CGShadingCreateAxial(RGBSpace(), p0, p1, fn, true, true);
-    CGContextDrawShading(ctx, sh);
-    CGShadingRelease(sh);
-    CGFunctionRelease(fn);
-}
-
 /* Elliptical radial gradient centred on c with radii rx, ry. */
 static void EllipticalRadial(CGContextRef ctx, CGPoint c, CGFloat rx, CGFloat ry,
                              const Ramp *ramp)
@@ -174,140 +145,33 @@ static CGRect CenteredRect(CGPoint c, CGFloat w, CGFloat h)
     return CGRectMake(c.x - w * 0.5f, c.y - h * 0.5f, w, h);
 }
 
-/* CGPathAddRoundedRect is 10.5+, so build it from arcs. */
-static void AddRoundRect(CGContextRef ctx, CGRect r, CGFloat rad)
-{
-    CGFloat minX = CGRectGetMinX(r), maxX = CGRectGetMaxX(r);
-    CGFloat minY = CGRectGetMinY(r), maxY = CGRectGetMaxY(r);
-    CGFloat lim = ((r.size.width < r.size.height) ? r.size.width : r.size.height) * 0.5f;
-
-    if (rad > lim) rad = lim;
-    CGContextMoveToPoint(ctx, minX + rad, minY);
-    CGContextAddArcToPoint(ctx, maxX, minY, maxX, maxY, rad);
-    CGContextAddArcToPoint(ctx, maxX, maxY, minX, maxY, rad);
-    CGContextAddArcToPoint(ctx, minX, maxY, minX, minY, rad);
-    CGContextAddArcToPoint(ctx, minX, minY, maxX, minY, rad);
-    CGContextClosePath(ctx);
-}
-
-static void SetOutline(CGContextRef ctx, CGFloat width)
-{
-    CGContextSetRGBStrokeColor(ctx, OUTLINE_R, OUTLINE_G, OUTLINE_B, 1);
-    CGContextSetLineWidth(ctx, width);
-}
-
-/* White part with vertical shading and a dark outline. */
-static void HelmetEllipse(CGContextRef ctx, CGRect r, CGFloat lw)
-{
-    CGContextSaveGState(ctx);
-    CGContextBeginPath(ctx);
-    CGContextAddEllipseInRect(ctx, r);
-    CGContextClip(ctx);
-    Axial(ctx, CGPointMake(0, CGRectGetMaxY(r)), CGPointMake(0, CGRectGetMinY(r)), &kHelmetRamp);
-    CGContextRestoreGState(ctx);
-    SetOutline(ctx, lw);
-    CGContextStrokeEllipseInRect(ctx, r);
-}
-
 /* ------------------------------------------------------------------ */
 /* Layout                                                             */
 /* ------------------------------------------------------------------ */
 
+/* The face box: eyes and mouth are placed in fractions of it. */
 typedef struct {
-    CGPoint c;          /* head centre      */
-    CGFloat hw, hh;     /* head size        */
-    CGPoint vc;         /* visor centre     */
-    CGFloat vw, vh;     /* visor size       */
-    CGFloat lw;         /* outline width    */
+    CGPoint vc;         /* face centre      */
+    CGFloat vw, vh;     /* face box size    */
 } Layout;
 
 static void DoLayout(CGRect b, Layout *L)
 {
     CGFloat m = (b.size.width < b.size.height) ? b.size.width : b.size.height;
 
-    L->hh = m * HEAD_H_FRAC;
-    L->hw = L->hh * HEAD_ASPECT;
-    L->c = CGPointMake(b.origin.x + b.size.width * 0.5f,
-                       b.origin.y + b.size.height * 0.5f - m * 0.02f);
-    L->vw = L->hw * VISOR_W_FRAC;
-    L->vh = L->hh * VISOR_H_FRAC;
-    L->vc = CGPointMake(L->c.x, L->c.y - L->hh * 0.03f);
-    L->lw = m * 0.012f;
-    if (L->lw < 2) L->lw = 2;
+    L->vh = m * FACE_H_FRAC;
+    L->vw = L->vh * FACE_ASPECT;
+    if (L->vw > b.size.width * 0.95f) {      /* very narrow screens */
+        L->vw = b.size.width * 0.95f;
+        L->vh = L->vw / FACE_ASPECT;
+    }
+    L->vc = CGPointMake(b.origin.x + b.size.width * 0.5f,
+                        b.origin.y + b.size.height * 0.5f);
 }
 
 /* ------------------------------------------------------------------ */
 /* Scene parts                                                        */
 /* ------------------------------------------------------------------ */
-
-static void DrawHead(CGContextRef ctx, const Layout *L)
-{
-    CGFloat earR = L->hh * 0.15f;
-    CGRect head = CenteredRect(L->c, L->hw, L->hh);
-    CGRect ear;
-    int side;
-
-    /* antenna dome peeking over the top */
-    HelmetEllipse(ctx, CenteredRect(CGPointMake(L->c.x, CGRectGetMaxY(head) + L->hh * 0.015f),
-                                    L->hh * 0.24f, L->hh * 0.15f), L->lw);
-    CGContextSetRGBFillColor(ctx, OUTLINE_R, OUTLINE_G, OUTLINE_B, 1);
-    CGContextFillEllipseInRect(ctx, CenteredRect(CGPointMake(L->c.x, CGRectGetMaxY(head) + L->hh * 0.04f),
-                                                 L->hh * 0.09f, L->hh * 0.05f));
-
-    /* ear pods */
-    for (side = -1; side <= 1; side += 2) {
-        CGPoint ec = CGPointMake(L->c.x + side * L->hw * 0.50f, L->c.y + L->hh * 0.02f);
-        ear = CenteredRect(ec, earR * 1.15f, earR * 2.0f);
-        HelmetEllipse(ctx, ear, L->lw);
-        SetOutline(ctx, L->lw * 0.6f);
-        CGContextStrokeEllipseInRect(ctx, CGRectInset(ear, earR * 0.18f, earR * 0.30f));
-    }
-
-    /* helmet */
-    CGContextSaveGState(ctx);
-    CGContextBeginPath(ctx);
-    AddRoundRect(ctx, head, L->hh * 0.46f);
-    CGContextClip(ctx);
-    Axial(ctx, CGPointMake(0, CGRectGetMaxY(head)), CGPointMake(0, CGRectGetMinY(head)), &kHelmetRamp);
-    CGContextRestoreGState(ctx);
-    CGContextBeginPath(ctx);
-    AddRoundRect(ctx, head, L->hh * 0.46f);
-    SetOutline(ctx, L->lw);
-    CGContextStrokePath(ctx);
-}
-
-static void DrawVisor(CGContextRef ctx, const Layout *L)
-{
-    CGRect visor = CenteredRect(L->vc, L->vw, L->vh);
-
-    CGContextSaveGState(ctx);
-    CGContextBeginPath(ctx);
-    AddRoundRect(ctx, visor, L->vh * 0.45f);
-    CGContextClip(ctx);
-    CGContextSetRGBFillColor(ctx, 0.04f, 0.05f, 0.12f, 1);
-    CGContextFillRect(ctx, visor);
-    EllipticalRadial(ctx, L->vc, L->vw * 0.55f, L->vh * 0.60f, &kVisorRamp);
-    CGContextRestoreGState(ctx);
-}
-
-/* Soft glass sheen, drawn last so it sits over the eyes. */
-static void DrawVisorGloss(CGContextRef ctx, const Layout *L)
-{
-    CGRect visor = CenteredRect(L->vc, L->vw, L->vh);
-
-    CGContextSaveGState(ctx);
-    CGContextBeginPath(ctx);
-    AddRoundRect(ctx, visor, L->vh * 0.45f);
-    CGContextClip(ctx);
-    EllipticalRadial(ctx, CGPointMake(L->vc.x - L->vw * 0.22f, L->vc.y + L->vh * 0.36f),
-                     L->vw * 0.30f, L->vh * 0.14f, &kGlossRamp);
-    CGContextRestoreGState(ctx);
-
-    CGContextBeginPath(ctx);
-    AddRoundRect(ctx, visor, L->vh * 0.45f);
-    SetOutline(ctx, L->lw);
-    CGContextStrokePath(ctx);
-}
 
 static void DrawEyes(CGContextRef ctx, const Layout *L, const EyeState *s,
                      CGFloat gx, CGFloat gy)
@@ -384,7 +248,9 @@ CGRect EyeSocketBounds(CGRect bounds)
 {
     Layout L;
     DoLayout(bounds, &L);
-    return CGRectIntegral(CGRectInset(CenteredRect(L.vc, L.vw, L.vh), -L.lw, -L.lw));
+    /* generous margin so the eye glow is always inside */
+    return CGRectIntegral(CGRectInset(CenteredRect(L.vc, L.vw, L.vh),
+                                      -L.vw * 0.05f, -L.vh * 0.10f));
 }
 
 void EyeDraw(CGContextRef ctx, CGRect bounds, const EyeState *s)
@@ -405,20 +271,10 @@ void EyeDraw(CGContextRef ctx, CGRect bounds, const EyeState *s)
 
     CGContextSetRGBFillColor(ctx, 0, 0, 0, 1);
     CGContextFillRect(ctx, bounds);
-    Radial(ctx, L.c, 0, L.c, far, &kBackgroundRamp);
+    Radial(ctx, L.vc, 0, L.vc, far, &kBackgroundRamp);
 
-    DrawHead(ctx, &L);
-    DrawVisor(ctx, &L);
-
-    CGContextSaveGState(ctx);
-    CGContextBeginPath(ctx);
-    AddRoundRect(ctx, CenteredRect(L.vc, L.vw, L.vh), L.vh * 0.45f);
-    CGContextClip(ctx);
     DrawEyes(ctx, &L, s, gx, gy);
     DrawMouth(ctx, &L, s, gx, gy);
-    CGContextRestoreGState(ctx);
-
-    DrawVisorGloss(ctx, &L);
 
     CGContextRestoreGState(ctx);
 }

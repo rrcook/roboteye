@@ -2,8 +2,7 @@
 
 A full-screen cute robot face for Mac OS X 10.4.11 on PowerPC. When it launches
 it takes over the screen. It hides the menu bar, Dock and cursor and shows a
-cartoon robot head: a white helmet with a dark visor, two glowing blue oval eyes
-and a blue mouth. The eyes hold a gaze for a random time, then dart to a new
+simple face on a dark background: two glowing blue oval eyes and a blue mouth. The eyes hold a gaze for a random time, then dart to a new
 direction or back to straight ahead. Now and then they do a slow scan, and they
 blink. The mouth mostly smiles, with an occasional frown or a surprised "O".
 **Press any key to quit.**
@@ -31,6 +30,6 @@ You can also double-click `RobotEye.app` in the Finder.
 ## Tuning
 
 - Timing and behavior: the `#define`s at the top of `EyeView.m`.
-- Size and proportions: the `*_FRAC`, `EYE_*` and `MOUTH_Y` values at the top of `eye_draw.c`.
+- Size and proportions: `FACE_*`, `EYE_*`, `GAZE_*` and `MOUTH_Y` at the top of `eye_draw.c`.
 - How often it frowns or looks surprised: `FROWN_CHANCE` and `SURPRISE_CHANCE` in `EyeView.m`.
-- Colors: `GLOW_*` (eyes and mouth) and `OUTLINE_*` in `eye_draw.c`, plus the `Ramp` tables.
+- Colors: `GLOW_*` (eyes and mouth) and `kBackgroundRamp` in `eye_draw.c`.
