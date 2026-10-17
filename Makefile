@@ -2,7 +2,7 @@
 #
 #   make            build RobotEye.app
 #   make run        build and launch it
-#   make preview    render robot_eye_preview.png / robot_eye_poses.png
+#   make preview    render docs/cartoon-face.png / docs/cartoon-face-poses.png
 #   make clean
 #
 # Overrides, e.g.:  make ARCHFLAGS="-arch ppc -arch i386"
@@ -49,7 +49,7 @@ $(BUILD)/preview: tools/preview.c eye_draw.c eye_draw.h | $(BUILD)
 	$(CC) $(CFLAGS) -o $@ tools/preview.c eye_draw.c -framework ApplicationServices
 
 preview: $(BUILD)/preview
-	$(BUILD)/preview robot_eye_preview.png robot_eye_poses.png
+	$(BUILD)/preview docs/cartoon-face.png docs/cartoon-face-poses.png
 
 clean:
 	rm -rf $(BUILD) $(APP)

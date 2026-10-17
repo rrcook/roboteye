@@ -56,8 +56,8 @@ int main(int argc, char **argv)
         {  1.00f,  0.00f, 0.00f,  0.90f, 0.00f },   /* full right, leaning     */
         {  0.20f,  0.00f, 0.85f,  1.00f, 0.00f }    /* mid-blink               */
     };
-    const char *fullPath = (argc > 1) ? argv[1] : "robot_eye_preview.png";
-    const char *posesPath = (argc > 2) ? argv[2] : "robot_eye_poses.png";
+    const char *fullPath = (argc > 1) ? argv[1] : "cartoon-face.png";
+    const char *posesPath = (argc > 2) ? argv[2] : "cartoon-face-poses.png";
     void *buf;
     CGContextRef ctx;
     int i, ok;
