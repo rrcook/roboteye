@@ -1,5 +1,7 @@
 build/
 *.app
+# ...except the prebuilt PowerPC apps kept in apps/
+!apps/*.app
 .DS_Store
 # Xcode 2.x per-user files
 *.pbxuser

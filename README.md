@@ -5,11 +5,34 @@ Objective-C (Cocoa) and C (CoreGraphics). When it starts it takes over the whole
 screen. It hides the menu bar, Dock and cursor, and shows a robot that looks
 around on its own. **Press any key to quit.**
 
-There are two versions, each marked with a git tag.
+There are two versions, each marked with a git tag. Ready-to-run builds of
+both are included in the repository, so you don't have to compile anything to
+try them.
+
+## Prebuilt apps
+
+The `apps/` folder holds both versions, compiled on a PowerPC Mac running
+Mac OS X 10.4.11 with Xcode 2.5:
+
+| App | Version | Built from tag |
+|-----|---------|----------------|
+| `apps/RobotEyeCute.app` | Cute cartoon face (latest) | `v2-cartoon-face` |
+| `apps/RobotEyeCyclops.app` | Single robot eye | `v1-single-eye` |
+
+They are PowerPC-only (`Mach-O executable ppc`) and need Mac OS X 10.4 or
+later on a PowerPC Mac. Intel Macs running 10.4 to 10.6 can also run them
+through Rosetta (untested). They do not run on current macOS or Apple Silicon.
+
+To use one, copy its `.app` folder to the PowerPC Mac and double-click it.
+Press any key to quit. Copy the whole folder: `scp -r`, or `ditto` on the Mac
+itself, both keep the bundle intact.
+
+Both apps use the same bundle identifier (`com.example.RobotEye`) and both
+contain an executable called `RobotEye`. Only the `.app` folder names differ.
 
 ## Versions
 
-### `v2-cartoon-face`: cute cartoon face (latest)
+### `v2-cartoon-face`: cute cartoon face (latest), `apps/RobotEyeCute.app`
 
 ![Cartoon face](docs/cartoon-face.png)
 
@@ -30,7 +53,7 @@ Two glowing blue oval eyes and a blue mouth on a dark background.
 *Smiling, glancing left, frowning while looking down-right, surprised "O",
 looking full right (leaning), mid-blink.*
 
-### `v1-single-eye`: single robot eye
+### `v1-single-eye`: single robot eye, `apps/RobotEyeCyclops.app`
 
 ![Single robot eye](docs/single-eye.png)
 
@@ -44,7 +67,8 @@ widens and narrows. Black eyelids blink now and then.
 *Straight ahead, up-left with a small pupil, right with a wide pupil, mid-blink
 looking down.*
 
-To build this version instead of the latest:
+A prebuilt copy is `apps/RobotEyeCyclops.app`. To build this version from
+source instead of the latest:
 
     git checkout v1-single-eye
     make clean && make
@@ -74,6 +98,8 @@ The project was built to these instructions, in order:
    `v2-cartoon-face`.)*
 7. Write up these instructions and build steps in this README. Tag the single
    eye and the cartoon face versions, with images of both.
+8. Add the two apps compiled on the PowerPC Mac to the repository, and note
+   that in this README.
 
 The reference drawings are stock images and are not in the repository; see
 `.gitignore`.
@@ -99,6 +125,13 @@ From the project folder in Terminal:
 
 You can also double-click `RobotEye.app` in the Finder. Press any key to quit.
 
+`make` puts its output in the project root (`RobotEye.app`) and `build/`. Git
+ignores both. Only the prebuilt copies in `apps/` are committed. To update one
+after rebuilding, copy the new bundle over it, for example:
+
+    rm -rf apps/RobotEyeCute.app
+    ditto RobotEye.app apps/RobotEyeCute.app
+
 The default build is for the machine's own architecture (PowerPC). To build a
 Universal binary with the 10.4u SDK:
 
@@ -122,6 +155,8 @@ the real drawing code (`eye_draw.c`), without running the app. It works on
 | `tools/preview.c` | Renders still PNGs with `eye_draw.c` |
 | `Info.plist` | Application bundle settings |
 | `Makefile` | Builds the `.app` bundle and the preview images |
+| `apps/` | Prebuilt PowerPC apps of both versions |
+| `docs/` | Images used in this README |
 
 ## Tuning (cartoon face)
 
